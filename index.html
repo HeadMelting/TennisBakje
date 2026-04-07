@@ -204,9 +204,31 @@
 
       .layout {
         grid-template-columns: 1fr;
-        grid-template-rows: 1.2fr 1fr;
+        grid-template-rows: auto auto;
         height: auto;
         min-height: calc(100% - 53px);
+      }
+
+      .panel {
+        overflow: visible;
+      }
+
+      .glb-wrap {
+        height: auto;
+      }
+
+      #viewer {
+        height: 52vh;
+        min-height: 240px;
+      }
+
+      .anim-row {
+        flex-wrap: wrap;
+      }
+
+      .time-label {
+        min-width: auto;
+        text-align: left;
       }
     }
   </style>
