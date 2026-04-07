@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Joon 3D Viewer</title>
+  <title>3D Motion Viewer</title>
   <style>
     :root {
       color-scheme: dark;
       --bg: #0d1117;
       --panel: #161b22;
+      --panel-2: #111821;
       --border: #30363d;
       --text: #e6edf3;
       --muted: #8b949e;
@@ -28,12 +29,52 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     }
 
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .topbar label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .topbar select,
+    .topbar input,
+    .topbar button {
+      background: #1f2833;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .topbar button {
+      cursor: pointer;
+    }
+
+    .topbar .muted {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
     .layout {
       display: grid;
       grid-template-columns: 2fr 1fr;
       gap: 12px;
-      height: 100%;
       padding: 12px;
+      height: calc(100% - 53px);
     }
 
     .panel {
@@ -76,6 +117,55 @@
       min-height: 320px;
     }
 
+    .glb-wrap {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      height: 100%;
+    }
+
+    .anim-controls {
+      border-top: 1px solid var(--border);
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: var(--panel-2);
+    }
+
+    .anim-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .anim-controls button,
+    .anim-controls select {
+      background: #1f2833;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .anim-controls button {
+      cursor: pointer;
+    }
+
+    .anim-controls input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+
+    .time-label {
+      font-size: 12px;
+      color: var(--muted);
+      min-width: 96px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
     .video-wrap {
       padding: 10px;
       display: flex;
@@ -89,7 +179,7 @@
       border-radius: 8px;
       border: 1px solid var(--border);
       background: #000;
-      max-height: calc(100vh - 140px);
+      max-height: calc(100vh - 210px);
     }
 
     .hint {
@@ -104,47 +194,98 @@
     }
 
     @media (max-width: 980px) {
+      .topbar {
+        flex-wrap: wrap;
+      }
+
+      .topbar .muted {
+        margin-left: 0;
+      }
+
       .layout {
         grid-template-columns: 1fr;
         grid-template-rows: 1.2fr 1fr;
+        height: auto;
+        min-height: calc(100% - 53px);
       }
     }
   </style>
 </head>
 <body>
+  <nav class="topbar">
+    <label for="profileSelect">Profile</label>
+    <select id="profileSelect"></select>
+    <input id="profileInput" type="text" placeholder="직접 입력 (예: joon)" />
+    <button id="loadProfileBtn" type="button">Load</button>
+    <span class="muted">경로: <code>assets/{name}/animated.glb</code>, <code>assets/{name}/video.mp4</code></span>
+  </nav>
+
   <main class="layout">
     <section class="panel">
       <header class="panel-header">
-        <h1 class="panel-title">animated_joon.glb (three.js)</h1>
-        <span id="glbStatus" class="status">로딩 준비 중...</span>
+        <h1 id="glbTitle" class="panel-title">animated.glb (three.js)</h1>
+        <span id="glbStatus" class="status">three.js 모듈 로딩 중...</span>
       </header>
-      <div id="viewer"></div>
+      <div class="glb-wrap">
+        <div id="viewer"></div>
+        <div class="anim-controls">
+          <div class="anim-row">
+            <button id="toggleAnimBtn" type="button">일시정지</button>
+            <label for="speedSelect" class="hint">배속</label>
+            <select id="speedSelect">
+              <option value="0.25">0.25x</option>
+              <option value="0.5">0.5x</option>
+              <option value="0.75">0.75x</option>
+              <option value="1" selected>1x</option>
+              <option value="1.25">1.25x</option>
+              <option value="1.5">1.5x</option>
+              <option value="2">2x</option>
+            </select>
+            <span id="timeLabel" class="time-label">0.00s / 0.00s</span>
+          </div>
+          <input id="timeline" type="range" min="0" max="1000" step="1" value="0" />
+        </div>
+      </div>
     </section>
 
     <section class="panel">
       <header class="panel-header">
-        <h2 class="panel-title">joon.mov</h2>
+        <h2 id="videoTitle" class="panel-title">video.mp4</h2>
       </header>
       <div class="video-wrap">
-        <video controls playsinline preload="metadata">
-          <source src="./assets/joon.mov" type="video/quicktime" />
-          브라우저가 MOV 재생을 지원하지 않습니다.
-        </video>
+        <video id="videoPlayer" controls playsinline preload="metadata"></video>
         <p class="hint">
-          일부 브라우저는 <code>.mov</code> 재생을 지원하지 않을 수 있습니다.
-          GitHub Pages에서 호환성이 필요하면 <code>.mp4(H.264)</code>도 함께 올리는 것을 권장합니다.
+          `assets/{name}/video.mp4`를 로드합니다. 코덱 이슈가 있으면 <code>H.264/AAC</code>로 인코딩하세요.
         </p>
       </div>
     </section>
   </main>
 
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./assets/vendor/three.module.js"
+      }
+    }
+  </script>
   <script type="module">
-    import * as THREE from "https://unpkg.com/three@0.164.1/build/three.module.js";
-    import { OrbitControls } from "https://unpkg.com/three@0.164.1/examples/jsm/controls/OrbitControls.js";
-    import { GLTFLoader } from "https://unpkg.com/three@0.164.1/examples/jsm/loaders/GLTFLoader.js";
+    import * as THREE from "three";
+    import { OrbitControls } from "./assets/vendor/OrbitControls.js";
+    import { GLTFLoader } from "./assets/vendor/GLTFLoader.js";
 
     const viewerEl = document.getElementById("viewer");
     const glbStatusEl = document.getElementById("glbStatus");
+    const glbTitleEl = document.getElementById("glbTitle");
+    const videoTitleEl = document.getElementById("videoTitle");
+    const videoPlayerEl = document.getElementById("videoPlayer");
+    const profileSelectEl = document.getElementById("profileSelect");
+    const profileInputEl = document.getElementById("profileInput");
+    const loadProfileBtnEl = document.getElementById("loadProfileBtn");
+
+    const timelineEl = document.getElementById("timeline");
+    const toggleAnimBtnEl = document.getElementById("toggleAnimBtn");
+    const speedSelectEl = document.getElementById("speedSelect");
+    const timeLabelEl = document.getElementById("timeLabel");
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0f1720);
@@ -185,42 +326,195 @@
 
     const loader = new GLTFLoader();
     const clock = new THREE.Clock();
-    const mixers = [];
 
-    loader.load(
-      "./assets/animated_joon.glb",
-      (gltf) => {
-        const model = gltf.scene;
-        scene.add(model);
+    let currentModel = null;
+    let mixer = null;
+    let clipDuration = 0;
+    let isPlaying = true;
+    let isScrubbing = false;
+    let currentTime = 0;
+    let loadToken = 0;
+    let currentProfileName = "";
+    let profiles = [];
 
-        const box = new THREE.Box3().setFromObject(model);
-        const center = box.getCenter(new THREE.Vector3());
-        const size = box.getSize(new THREE.Vector3());
-        const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+    function formatSec(value) {
+      return `${value.toFixed(2)}s`;
+    }
 
-        model.position.sub(center);
-        model.position.y += size.y * 0.5;
+    function currentSpeed() {
+      return Number(speedSelectEl.value) || 1;
+    }
 
-        const distance = maxDim * 1.6;
-        camera.position.set(distance * 0.4, distance * 0.7, distance);
-        controls.target.set(0, size.y * 0.4, 0);
-        controls.update();
+    function updateTimelineLabel(time) {
+      timeLabelEl.textContent = `${formatSec(time)} / ${formatSec(clipDuration)}`;
+    }
 
-        if (gltf.animations && gltf.animations.length > 0) {
-          const mixer = new THREE.AnimationMixer(model);
-          gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
-          mixers.push(mixer);
-          glbStatusEl.textContent = `GLB 로드 완료 (애니메이션 ${gltf.animations.length}개)`;
-        } else {
-          glbStatusEl.textContent = "GLB 로드 완료 (애니메이션 없음)";
-        }
-      },
-      undefined,
-      (error) => {
-        console.error(error);
-        glbStatusEl.textContent = "GLB 로드 실패 - 경로를 확인하세요.";
+    function setAnimControlsEnabled(enabled) {
+      toggleAnimBtnEl.disabled = !enabled;
+      timelineEl.disabled = !enabled;
+      speedSelectEl.disabled = !enabled;
+    }
+
+    function clearCurrentModel() {
+      if (currentModel) {
+        scene.remove(currentModel);
+        currentModel = null;
       }
-    );
+      mixer = null;
+      clipDuration = 0;
+      currentTime = 0;
+      timelineEl.value = "0";
+      updateTimelineLabel(0);
+      setAnimControlsEnabled(false);
+      toggleAnimBtnEl.textContent = "일시정지";
+      isPlaying = true;
+    }
+
+    function setProfileQuery(name) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("name", name);
+      history.replaceState(null, "", url);
+    }
+
+    function setProfileOptions(items) {
+      profileSelectEl.innerHTML = "";
+      items.forEach((name) => {
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = name;
+        profileSelectEl.appendChild(option);
+      });
+    }
+
+    async function fetchProfiles() {
+      try {
+        const response = await fetch("./assets/profiles.json", { cache: "no-store" });
+        if (!response.ok) throw new Error(`profiles.json ${response.status}`);
+        const data = await response.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return data.filter((x) => typeof x === "string" && x.trim().length > 0);
+        }
+      } catch (error) {
+        console.warn(error);
+      }
+      return ["joon"];
+    }
+
+    function frameModel(model) {
+      const box = new THREE.Box3().setFromObject(model);
+      const center = box.getCenter(new THREE.Vector3());
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+
+      model.position.sub(center);
+      model.position.y += size.y * 0.5;
+
+      const distance = maxDim * 1.6;
+      camera.position.set(distance * 0.4, distance * 0.7, distance);
+      controls.target.set(0, size.y * 0.4, 0);
+      controls.update();
+    }
+
+    function loadProfile(name) {
+      const profile = (name || "").trim();
+      if (!profile) return;
+
+      currentProfileName = profile;
+      setProfileQuery(profile);
+      profileInputEl.value = profile;
+      profileSelectEl.value = profile;
+
+      const videoPath = `./assets/${profile}/video.mp4`;
+      const glbPath = `./assets/${profile}/animated.glb`;
+      const localToken = ++loadToken;
+
+      glbTitleEl.textContent = `${profile}/animated.glb (three.js)`;
+      videoTitleEl.textContent = `${profile}/video.mp4`;
+
+      videoPlayerEl.src = videoPath;
+      videoPlayerEl.load();
+
+      clearCurrentModel();
+      glbStatusEl.textContent = `${profile} GLB 로딩 중...`;
+
+      loader.load(
+        glbPath,
+        (gltf) => {
+          if (localToken !== loadToken) return;
+
+          const model = gltf.scene;
+          currentModel = model;
+          scene.add(model);
+          frameModel(model);
+
+          if (gltf.animations && gltf.animations.length > 0) {
+            mixer = new THREE.AnimationMixer(model);
+            gltf.animations.forEach((clip) => mixer.clipAction(clip).play());
+            clipDuration = Math.max(...gltf.animations.map((clip) => clip.duration));
+            currentTime = 0;
+            mixer.setTime(0);
+            updateTimelineLabel(0);
+            setAnimControlsEnabled(true);
+            glbStatusEl.textContent = `${profile} 로드 완료 (애니메이션 ${gltf.animations.length}개)`;
+          } else {
+            glbStatusEl.textContent = `${profile} 로드 완료 (애니메이션 없음)`;
+          }
+        },
+        undefined,
+        (error) => {
+          if (localToken !== loadToken) return;
+          console.error(error);
+          glbStatusEl.textContent = `${profile} GLB 로드 실패 - 경로 확인`;
+        }
+      );
+    }
+
+    toggleAnimBtnEl.addEventListener("click", () => {
+      isPlaying = !isPlaying;
+      toggleAnimBtnEl.textContent = isPlaying ? "일시정지" : "재생";
+    });
+
+    timelineEl.addEventListener("input", () => {
+      isScrubbing = true;
+      if (clipDuration <= 0) return;
+      const ratio = Number(timelineEl.value) / 1000;
+      updateTimelineLabel(ratio * clipDuration);
+    });
+
+    timelineEl.addEventListener("change", () => {
+      if (!mixer || clipDuration <= 0) {
+        isScrubbing = false;
+        return;
+      }
+      const ratio = Number(timelineEl.value) / 1000;
+      currentTime = ratio * clipDuration;
+      mixer.setTime(currentTime);
+      updateTimelineLabel(currentTime);
+      isScrubbing = false;
+    });
+
+    profileSelectEl.addEventListener("change", () => {
+      profileInputEl.value = profileSelectEl.value;
+      loadProfile(profileSelectEl.value);
+    });
+
+    loadProfileBtnEl.addEventListener("click", () => {
+      const name = profileInputEl.value.trim();
+      if (!name) return;
+
+      if (!profiles.includes(name)) {
+        profiles.push(name);
+        setProfileOptions(profiles);
+      }
+      profileSelectEl.value = name;
+      loadProfile(name);
+    });
+
+    profileInputEl.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        loadProfileBtnEl.click();
+      }
+    });
 
     window.addEventListener("resize", () => {
       const width = viewerEl.clientWidth;
@@ -233,10 +527,35 @@
     function animate() {
       requestAnimationFrame(animate);
       const delta = clock.getDelta();
-      mixers.forEach((mixer) => mixer.update(delta));
+
+      if (mixer && clipDuration > 0 && !isScrubbing) {
+        if (isPlaying) {
+          currentTime = (currentTime + delta * currentSpeed()) % clipDuration;
+        }
+        mixer.setTime(currentTime);
+        timelineEl.value = String(Math.round((currentTime / clipDuration) * 1000));
+        updateTimelineLabel(currentTime);
+      }
+
       controls.update();
       renderer.render(scene, camera);
     }
+
+    glbStatusEl.textContent = "프로필 목록 로딩 중...";
+    setAnimControlsEnabled(false);
+
+    profiles = await fetchProfiles();
+    setProfileOptions(profiles);
+
+    const initialFromQuery = new URLSearchParams(window.location.search).get("name");
+    const initialProfile = initialFromQuery || profiles[0];
+    profileInputEl.value = initialProfile;
+    if (!profiles.includes(initialProfile)) {
+      profiles.push(initialProfile);
+      setProfileOptions(profiles);
+    }
+    profileSelectEl.value = initialProfile;
+    loadProfile(initialProfile);
 
     animate();
   </script>

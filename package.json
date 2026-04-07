@@ -1,0 +1,24 @@
+{
+  "name": "tennis_3d_io",
+  "version": "1.0.0",
+  "description": "`assets/animated_joon.glb` 와 `assets/joon.mov`를 브라우저에서 확인하는 정적 페이지입니다.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HeadMelting/TennisBakje.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/HeadMelting/TennisBakje/issues"
+  },
+  "homepage": "https://github.com/HeadMelting/TennisBakje#readme",
+  "dependencies": {
+    "three": "^0.183.2"
+  }
+}
